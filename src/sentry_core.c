@@ -492,24 +492,24 @@ sentry__prepare_event(const sentry_options_t *options, sentry_value_t event,
     if (!envelope || !sentry__envelope_add_event(envelope, event)) {
         goto fail;
     }
-
-    SENTRY_TRACE("adding attachments to envelope");
-    for (sentry_attachment_t *attachment = options->attachments; attachment;
-         attachment = attachment->next) {
-        sentry_envelope_item_t *item = sentry__envelope_add_from_path(
-            envelope, attachment->path, "attachment");
-        if (!item) {
-            continue;
+    /*
+        SENTRY_TRACE("adding attachments to envelope");
+        for (sentry_attachment_t *attachment = options->attachments; attachment;
+             attachment = attachment->next) {
+            sentry_envelope_item_t *item = sentry__envelope_add_from_path(
+                envelope, attachment->path, "attachment");
+            if (!item) {
+                continue;
+            }
+            sentry__envelope_item_set_header(item, "filename",
+    #ifdef SENTRY_PLATFORM_WINDOWS
+                sentry__value_new_string_from_wstr(
+    #else
+                sentry_value_new_string(
+    #endif
+                    sentry__path_filename(attachment->path)));
         }
-        sentry__envelope_item_set_header(item, "filename",
-#ifdef SENTRY_PLATFORM_WINDOWS
-            sentry__value_new_string_from_wstr(
-#else
-            sentry_value_new_string(
-#endif
-                sentry__path_filename(attachment->path)));
-    }
-
+    */
     return envelope;
 
 fail:
