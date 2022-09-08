@@ -105,7 +105,13 @@ FileWriter* CrashReportDatabase::NewReport::AddAttachment(
 #else
   const std::string name_string = FixAttachmentName(name);
 #endif
-  base::FilePath attachment_path = report_attachments_dir.Append(name_string);
+  base::FilePath attachment_path;
+  if (name_string == L"debug.log") {
+    const std::wstring new_name_string = L"debug.log.gz";
+    attachment_path = report_attachments_dir.Append(new_name_string);
+  } else {
+    attachment_path = report_attachments_dir.Append(name_string);
+  }
   auto writer = std::make_unique<FileWriter>();
   if (!writer->Open(attachment_path,
                     FileWriteMode::kCreateOrFail,

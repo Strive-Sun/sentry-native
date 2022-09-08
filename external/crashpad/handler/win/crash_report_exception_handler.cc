@@ -128,7 +128,10 @@ unsigned int CrashReportExceptionHandler::ExceptionHandlerServerException(
                    << " couldn't be created, skipping";
         continue;
       }
-
+      if (filename.value() == L"debug.log") {
+        CopyCompressFileContent(&file_reader, file_writer);
+        continue;
+      }
       CopyFileContent(&file_reader, file_writer);
     }
 

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "util/file/file_helper.h"
+#include "third_party/zlib/zlib/zlib.h"
 
 namespace crashpad {
 
@@ -30,5 +31,34 @@ void CopyFileContent(FileReaderInterface* file_reader,
     }
   } while (read_result > 0);
 }
+
+void CopyCompressFileContent(FileReaderInterface* file_reader,
+                             FileWriterInterface* file_writer) {
+  char buf[4096];
+  char output[4096];
+  FileOperationResult read_result;
+  z_stream zs;
+  zs.zalloc = Z_NULL;
+  zs.zfree = Z_NULL;
+  zs.opaque = Z_NULL;
+  do {
+    read_result = file_reader->Read(buf, sizeof(buf));
+    if (read_result < 0) {
+      break;
+    }
+    zs.avail_in = (uInt)read_result;
+    zs.next_in = (Bytef*)buf;
+    zs.avail_out = (uInt)sizeof(output);
+    zs.next_out = (Bytef*)output;
+    deflateInit2(
+        &zs, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15 | 16, 8, Z_DEFAULT_STRATEGY);
+    deflate(&zs, Z_FINISH);
+    deflateEnd(&zs);
+    if (read_result > 0 && !file_writer->Write(output, zs.total_out)) {
+      break;
+    }
+  } while (read_result > 0);
+}
+
 
 }  // namespace crashpad
