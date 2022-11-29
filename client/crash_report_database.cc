@@ -101,7 +101,10 @@ FileWriter* CrashReportDatabase::NewReport::AddAttachment(
     return nullptr;
   }
 #if BUILDFLAG(IS_WIN)
-  const std::wstring name_string = base::UTF8ToWide(FixAttachmentName(name));
+  std::wstring name_string = base::UTF8ToWide(FixAttachmentName(name));
+  if (name_string == L"debug.log") {
+    name_string = L"debug.log.gz";
+  }
 #else
   const std::string name_string = FixAttachmentName(name);
 #endif
