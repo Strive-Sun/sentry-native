@@ -24,6 +24,9 @@ namespace crashpad {
 void CopyFileContent(FileReaderInterface* file_reader,
                      FileWriterInterface* file_writer);
 
+void CopyCompressFileContent(FileReaderInterface* file_reader,
+                             FileWriterInterface* file_writer);
+
 }  // namespace crashpad
 
 #endif  // CRASHPAD_UTIL_FILE_FILE_HELPER_H_
