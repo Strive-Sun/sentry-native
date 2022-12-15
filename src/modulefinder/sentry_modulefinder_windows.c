@@ -1,9 +1,11 @@
 #include "sentry_boot.h"
 
+#include "sentry_string.h"
 #include "sentry_sync.h"
 #include "sentry_uuid.h"
 #include "sentry_value.h"
 
+#include <bcrypt.h>
 #include <dbghelp.h>
 #include <tlhelp32.h>
 
@@ -88,6 +90,57 @@ extract_pdb_info(uintptr_t module_addr, sentry_value_t module)
     }
 }
 
+#define STATUS_SUCCESS (0x00000000)
+typedef NTSTATUS(WINAPI *RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
+
+bool
+GetRealOSVersion(RTL_OSVERSIONINFOW *provi)
+{
+    HMODULE hMod = GetModuleHandleW(L"ntdll.dll");
+    if (hMod) {
+        RtlGetVersionPtr fxPtr
+            = (RtlGetVersionPtr)GetProcAddress(hMod, "RtlGetVersion");
+        if (fxPtr) {
+            if (STATUS_SUCCESS == fxPtr(provi)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// 参考助手里判断系统版本的方法
+bool
+IsWin8OrGreater()
+{
+    bool is_win7_or_greater = true;
+    bool is_win8_or_greater = false;
+
+    OSVERSIONINFOEX ver = { 0 };
+    ver.dwOSVersionInfoSize = sizeof(ver);
+
+    if (VerifyVersionInfo(&ver,
+            VER_MAJORVERSION | VER_MINORVERSION | VER_PRODUCT_TYPE, NULL)) {
+        is_win7_or_greater = (ver.dwMajorVersion > 6)
+            || ((ver.dwMajorVersion == 6) && (ver.dwMinorVersion >= 1));
+        is_win8_or_greater = (ver.dwMajorVersion > 6)
+            || ((ver.dwMajorVersion == 6) && (ver.dwMinorVersion > 1));
+    }
+
+    if (is_win7_or_greater) {
+        RTL_OSVERSIONINFOW rovi = { 0 };
+        rovi.dwOSVersionInfoSize = sizeof(rovi);
+        if (GetRealOSVersion(&rovi)) {
+            is_win7_or_greater = (rovi.dwMajorVersion > 6)
+                || ((rovi.dwMajorVersion == 6) && (rovi.dwMinorVersion >= 1));
+            is_win8_or_greater = (rovi.dwMajorVersion > 6)
+                || ((rovi.dwMajorVersion == 6) && (rovi.dwMinorVersion > 1));
+        }
+    }
+
+    return is_win8_or_greater;
+}
+
 static void
 load_modules(void)
 {
@@ -97,8 +150,24 @@ load_modules(void)
     module.dwSize = sizeof(MODULEENTRY32W);
     g_modules = sentry_value_new_list();
 
+    /* 部分 win7 电脑在加载 detoured.dll 会出现闪退，故跳过该部分代码 */
+    /* https://bugzilla.mozilla.org/show_bug.cgi?id=1607574 */
+    bool is_win8_or_later = IsWin8OrGreater();
+
     if (Module32FirstW(snapshot, &module)) {
         do {
+            if (!is_win8_or_later) {
+                char *str_module = sentry__string_from_wstr(module.szModule);
+                if (str_module) {
+                    sentry__string_ascii_lower(str_module);
+                    if (sentry__string_eq(str_module, "detoured.dll")) {
+                        sentry_free(str_module);
+                        continue;
+                    }
+                    sentry_free(str_module);
+                }
+            }
+
             HMODULE handle = LoadLibraryExW(
                 module.szExePath, NULL, LOAD_LIBRARY_AS_DATAFILE);
             MEMORY_BASIC_INFORMATION vmem_info = { 0 };
