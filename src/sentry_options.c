@@ -89,6 +89,7 @@ sentry_options_free(sentry_options_t *opts)
     sentry_free(opts->http_proxy);
     sentry_free(opts->ca_certs);
     sentry_free(opts->transport_thread_name);
+    sentry_free(opts->app_user_agent);
     sentry__path_free(opts->database_path);
     sentry__path_free(opts->handler_path);
     sentry_transport_free(opts->transport);
@@ -442,4 +443,12 @@ sentry_options_set_backend(sentry_options_t *opts, sentry_backend_t *backend)
 {
     sentry__backend_free(opts->backend);
     opts->backend = backend;
+}
+
+void
+sentry_options_set_app_user_agent(
+    sentry_options_t *opts, const char *app_user_agent)
+{
+    sentry_free(opts->app_user_agent);
+    opts->app_user_agent = sentry__string_clone(app_user_agent);
 }
