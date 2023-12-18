@@ -1186,8 +1186,9 @@ SENTRY_API void sentry_options_set_app_user_agent(
  *
  * This takes ownership of the options.  After the options have been set
  * they cannot be modified any more.
- * Depending on the configured transport and backend, this function might
- * not be fully thread-safe. Returns 0 on success.
+ * Depending on the configured transport and backend, this function might not be
+ * fully thread-safe.
+ * Returns 0 on success.
  */
 SENTRY_API int sentry_init(sentry_options_t *options);
 
