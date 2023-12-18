@@ -63,10 +63,9 @@ sentry__winhttp_transport_start(
     winhttp_bgworker_state_t *state = sentry__bgworker_get_state(bgworker);
 
     state->dsn = sentry__dsn_incref(opts->dsn);
-    if (opts->app_user_agent != NULL) {
-        char user_agent[255] = { 0 };
-        strcat(user_agent, opts->app_user_agent);
-        strcat(user_agent, " ");
+    if (opts->app_user_agent) {
+        char user_agent[255];
+        snprintf(user_agent, sizeof(user_agent), "%s ", opts->app_user_agent);
         strcat(user_agent, SENTRY_SDK_USER_AGENT);
         state->user_agent = sentry__string_to_wstr(user_agent);
     } else {
