@@ -1173,6 +1173,12 @@ SENTRY_API uint64_t sentry_options_get_shutdown_timeout(sentry_options_t *opts);
 SENTRY_API void sentry_options_set_backend(
     sentry_options_t *opts, sentry_backend_t *backend);
 
+/**
+ * Sets a user-defined user-agent.
+ */
+SENTRY_API void sentry_options_set_app_user_agent(
+    sentry_options_t *opts, const char *app_user_agent);
+
 /* -- Global APIs -- */
 
 /**
