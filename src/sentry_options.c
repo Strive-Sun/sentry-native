@@ -87,6 +87,7 @@ sentry_options_free(sentry_options_t *opts)
     sentry_free(opts->release);
     sentry_free(opts->sdk_name);
     sentry_free(opts->user_agent);
+    sentry_free(opts->app_user_agent);
     sentry_free(opts->environment);
     sentry_free(opts->dist);
     sentry_free(opts->http_proxy);
@@ -593,4 +594,12 @@ sentry_options_set_backend(sentry_options_t *opts, sentry_backend_t *backend)
 {
     sentry__backend_free(opts->backend);
     opts->backend = backend;
+}
+
+void
+sentry_options_set_app_user_agent(
+    sentry_options_t *opts, const char *app_user_agent)
+{
+    sentry_free(opts->app_user_agent);
+    opts->app_user_agent = sentry__string_clone(app_user_agent);
 }

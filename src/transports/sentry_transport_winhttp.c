@@ -64,6 +64,15 @@ sentry__winhttp_transport_start(
 
     state->dsn = sentry__dsn_incref(opts->dsn);
     state->user_agent = sentry__string_to_wstr(opts->user_agent);
+    wchar_t *full_user_agent = state->user_agent;
+    bool user_agent_owned = false;
+    if (opts->app_user_agent) {
+        char user_agent[255];
+        snprintf(user_agent, sizeof(user_agent), "%s %s", opts->app_user_agent,
+            opts->user_agent);
+        full_user_agent = sentry__string_to_wstr(user_agent);
+        user_agent_owned = true;
+    }
     state->debug = opts->debug;
 
     sentry__bgworker_setname(bgworker, opts->transport_thread_name);
@@ -84,21 +93,24 @@ sentry__winhttp_transport_start(
 
     if (state->proxy) {
         state->session
-            = WinHttpOpen(state->user_agent, WINHTTP_ACCESS_TYPE_NAMED_PROXY,
+            = WinHttpOpen(full_user_agent, WINHTTP_ACCESS_TYPE_NAMED_PROXY,
                 state->proxy, WINHTTP_NO_PROXY_BYPASS, 0);
     } else {
 #if _WIN32_WINNT >= 0x0603
-        state->session = WinHttpOpen(state->user_agent,
+        state->session = WinHttpOpen(full_user_agent,
             WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_NO_PROXY_NAME,
             WINHTTP_NO_PROXY_BYPASS, 0);
 #endif
         // On windows 8.0 or lower, WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY does
         // not work on error we fallback to WINHTTP_ACCESS_TYPE_DEFAULT_PROXY
         if (!state->session) {
-            state->session = WinHttpOpen(state->user_agent,
+            state->session = WinHttpOpen(full_user_agent,
                 WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, WINHTTP_NO_PROXY_NAME,
                 WINHTTP_NO_PROXY_BYPASS, 0);
         }
+    }
+    if (user_agent_owned) {
+        sentry_free(full_user_agent);
     }
     if (!state->session) {
         SENTRY_WARN("`WinHttpOpen` failed");
