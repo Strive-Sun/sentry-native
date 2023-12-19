@@ -65,8 +65,8 @@ sentry__winhttp_transport_start(
     state->dsn = sentry__dsn_incref(opts->dsn);
     if (opts->app_user_agent) {
         char user_agent[255];
-        snprintf(user_agent, sizeof(user_agent), "%s ", opts->app_user_agent);
-        strcat(user_agent, SENTRY_SDK_USER_AGENT);
+        snprintf(user_agent, sizeof(user_agent), "%s %s", opts->app_user_agent,
+            SENTRY_SDK_USER_AGENT);
         state->user_agent = sentry__string_to_wstr(user_agent);
     } else {
         state->user_agent = sentry__string_to_wstr(SENTRY_SDK_USER_AGENT);
