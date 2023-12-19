@@ -174,6 +174,7 @@ sentry__curl_send_task(void *_envelope, void *_state)
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, req->body);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long)req->body_len);
+    // TODO: curl 支持 app_user_agent
     curl_easy_setopt(curl, CURLOPT_USERAGENT, SENTRY_SDK_USER_AGENT);
 
     struct header_info info;
