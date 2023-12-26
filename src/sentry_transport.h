@@ -73,6 +73,7 @@ typedef struct sentry_prepared_http_request_s {
     char *body;
     size_t body_len;
     bool body_owned;
+    bool compressed;
 } sentry_prepared_http_request_t;
 
 /**
@@ -88,5 +89,11 @@ sentry_prepared_http_request_t *sentry__prepare_http_request(
  * Free a previously allocated HTTP request.
  */
 void sentry__prepared_http_request_free(sentry_prepared_http_request_t *req);
+
+/**
+ * Gzip
+ */
+void sentry_gzipped_with_compression(const char *body, const size_t body_len,
+    char **compressed_body, size_t *compressed_body_len, bool *compressed);
 
 #endif
