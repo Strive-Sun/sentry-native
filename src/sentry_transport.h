@@ -73,7 +73,6 @@ typedef struct sentry_prepared_http_request_s {
     char *body;
     size_t body_len;
     bool body_owned;
-    bool compressed;
 } sentry_prepared_http_request_t;
 
 /**

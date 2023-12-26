@@ -235,7 +235,7 @@ sentry__prepare_http_request(sentry_envelope_t *envelope,
     if (compressed) {
         req->body = compressed_body;
         req->body_len = compressed_body_len;
-        req->compressed = compressed;
+        req->body_owned = compressed;
     } else {
         req->body = body;
         req->body_len = body_len;
@@ -256,7 +256,7 @@ sentry__prepared_http_request_free(sentry_prepared_http_request_t *req)
         sentry_free(req->headers[i].value);
     }
     sentry_free(req->headers);
-    if (req->compressed || req->body_owned) {
+    if (req->body_owned) {
         sentry_free(req->body);
     }
     sentry_free(req);
@@ -271,12 +271,8 @@ sentry_gzipped_with_compression(const char *body, const size_t body_len,
     }
 
     z_stream stream;
-    stream.zalloc = Z_NULL;
-    stream.zfree = Z_NULL;
-    stream.opaque = Z_NULL;
+    memset(&stream, 0, sizeof(stream));
     stream.next_in = body;
-    stream.total_out = 0;
-    stream.avail_out = 0;
     stream.avail_in = body_len;
 
     int err = deflateInit2(&stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
@@ -287,27 +283,28 @@ sentry_gzipped_with_compression(const char *body, const size_t body_len,
     }
 
     size_t len = compressBound(body_len);
-    char* buffer = sentry_malloc(len);
+    char *buffer = sentry_malloc(len);
     if (!buffer) {
+        deflateEnd(&stream);
         return;
     }
 
-    *compressed_body_len = len;
-    *compressed_body = buffer;
-
     while (err == Z_OK) {
-        stream.next_out = *compressed_body + stream.total_out;
-        stream.avail_out = *compressed_body_len - stream.total_out;
+        stream.next_out = buffer + stream.total_out;
+        stream.avail_out = len - stream.total_out;
         err = deflate(&stream, Z_FINISH);
-        if (err != Z_OK && err != Z_STREAM_END) {
-            SENTRY_TRACEF("deflate failed: %d\n", err);
-            sentry_free(*compressed_body);
-            *compressed_body = NULL;
-            return;
-        }
+    }
+
+    if (err != Z_STREAM_END) {
+        SENTRY_TRACEF("deflate failed: %d\n", err);
+        sentry_free(buffer);
+        buffer = NULL;
+        deflateEnd(&stream);
+        return;
     }
 
     *compressed_body_len = stream.total_out;
+    *compressed_body = buffer;
 
     deflateEnd(&stream);
 
