@@ -166,11 +166,10 @@ sentry__prepare_http_request(sentry_envelope_t *envelope,
         return NULL;
     }
 
-    bool compressed = false;
     char *compressed_body = NULL;
     size_t compressed_body_len = 0;
-    sentry_gzipped_with_compression(
-        body, body_len, &compressed_body, &compressed_body_len, &compressed);
+    bool compressed = sentry_gzipped_with_compression(
+        body, body_len, &compressed_body, &compressed_body_len);
     if (compressed) {
         if (body_owned) {
             sentry_free(body);
@@ -185,7 +184,6 @@ sentry__prepare_http_request(sentry_envelope_t *envelope,
         if (compressed) {
             sentry_free(compressed_body);
         }
-
         if (body_owned) {
             sentry_free(body);
         }
@@ -198,7 +196,6 @@ sentry__prepare_http_request(sentry_envelope_t *envelope,
         if (compressed) {
             sentry_free(compressed_body);
         }
-
         if (body_owned) {
             sentry_free(body);
         }
@@ -235,7 +232,7 @@ sentry__prepare_http_request(sentry_envelope_t *envelope,
     if (compressed) {
         req->body = compressed_body;
         req->body_len = compressed_body_len;
-        req->body_owned = compressed;
+        req->body_owned = true;
     } else {
         req->body = body;
         req->body_len = body_len;
@@ -262,12 +259,12 @@ sentry__prepared_http_request_free(sentry_prepared_http_request_t *req)
     sentry_free(req);
 }
 
-void
+bool
 sentry_gzipped_with_compression(const char *body, const size_t body_len,
-    char **compressed_body, size_t *compressed_body_len, bool *compressed)
+    char **compressed_body, size_t *compressed_body_len)
 {
     if (!body || body_len == 0) {
-        return;
+        return false;
     }
 
     z_stream stream;
@@ -279,14 +276,14 @@ sentry_gzipped_with_compression(const char *body, const size_t body_len,
         MAX_WBITS + 16, 9, Z_DEFAULT_STRATEGY);
     if (err != Z_OK) {
         SENTRY_TRACEF("deflateInit2 failed: %d\n", err);
-        return;
+        return false;
     }
 
     size_t len = compressBound(body_len);
     char *buffer = sentry_malloc(len);
     if (!buffer) {
         deflateEnd(&stream);
-        return;
+        return false;
     }
 
     while (err == Z_OK) {
@@ -300,7 +297,7 @@ sentry_gzipped_with_compression(const char *body, const size_t body_len,
         sentry_free(buffer);
         buffer = NULL;
         deflateEnd(&stream);
-        return;
+        return false;
     }
 
     *compressed_body_len = stream.total_out;
@@ -308,6 +305,5 @@ sentry_gzipped_with_compression(const char *body, const size_t body_len,
 
     deflateEnd(&stream);
 
-    *compressed = true;
-    return;
+    return true;
 }
