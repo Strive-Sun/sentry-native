@@ -275,7 +275,7 @@ sentry_gzipped_with_compression(const char *body, const size_t body_len,
     int err = deflateInit2(&stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
         MAX_WBITS + 16, 9, Z_DEFAULT_STRATEGY);
     if (err != Z_OK) {
-        SENTRY_TRACEF("deflateInit2 failed: %d\n", err);
+        SENTRY_TRACEF("deflateInit2 failed: %d", err);
         return false;
     }
 
@@ -293,7 +293,7 @@ sentry_gzipped_with_compression(const char *body, const size_t body_len,
     }
 
     if (err != Z_STREAM_END) {
-        SENTRY_TRACEF("deflate failed: %d\n", err);
+        SENTRY_TRACEF("deflate failed: %d", err);
         sentry_free(buffer);
         buffer = NULL;
         deflateEnd(&stream);
@@ -304,6 +304,5 @@ sentry_gzipped_with_compression(const char *body, const size_t body_len,
     *compressed_body = buffer;
 
     deflateEnd(&stream);
-
     return true;
 }
