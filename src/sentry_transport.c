@@ -5,8 +5,13 @@
 #include "sentry_ratelimiter.h"
 #include "sentry_string.h"
 
+// 强制开启 SENTRY_TRANSPORT_COMPRESSION
+#ifndef SENTRY_TRANSPORT_COMPRESSION
+#     define SENTRY_TRANSPORT_COMPRESSION
+#endif // !SENTRY_TRANSPORT_COMPRESSION
+
 #ifdef SENTRY_TRANSPORT_COMPRESSION
-#    include "external/crashpad/third_party/zlib/zlib/zlib.h"
+#     include "external/crashpad/third_party/zlib/zlib/zlib.h"
 #endif
 
 #define ENVELOPE_MIME "application/x-sentry-envelope"
